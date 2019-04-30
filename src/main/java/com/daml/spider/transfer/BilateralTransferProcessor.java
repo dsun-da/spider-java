@@ -1,15 +1,15 @@
 // Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its affiliates.
 // All rights reserved.
 
-package com.daml.asx.transfer;
+package com.daml.spider.transfer;
 
 import com.daml.ledger.javaapi.data.*;
 import com.daml.ledger.rxjava.LedgerClient;
 import com.google.protobuf.Empty;
 import da.internal.prelude.optional.Some;
-import da.asx.main.bizprocess.holding.model.Holding;
-import da.asx.main.integration.bmw.ingress.BmwIngressMaster;
-import da.asx.main.integration.bmw.messages.hold202.Hold202;
+import da.spider.main.bizprocess.holding.model.Holding;
+import da.spider.main.integration.bmw.ingress.BmwIngressMaster;
+import da.spider.main.integration.bmw.messages.hold202.Hold202;
 import io.reactivex.Flowable;
 
 import java.math.BigDecimal;
@@ -18,7 +18,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static com.daml.asx.Main.APP_ID;
+import static com.daml.spider.Main.APP_ID;
 
 
 public class BilateralTransferProcessor {
@@ -75,8 +75,8 @@ public class BilateralTransferProcessor {
         // assemble the request for the transaction stream
         System.out.printf("%s starts reading transactions.\n", operator);
         Flowable<Transaction> transactions = client.getTransactionsClient().getTransactions(
-                LedgerOffset.LedgerEnd.getInstance(),
-//                LedgerOffset.LedgerBegin.getInstance(),
+//                LedgerOffset.LedgerEnd.getInstance(),
+                LedgerOffset.LedgerBegin.getInstance(),
                 new FiltersByParty(
                         Collections.singletonMap(operator, NoFilter.instance)),
                 true);
@@ -206,7 +206,7 @@ public class BilateralTransferProcessor {
 //        TOOD extract Balance
 //        if (template.equals(hold202OutMsgIdentifier)) {
 //            Record arguments = event.getArguments();
-//            String hin = extractHoldingFromHold202(arguments);
+//            String hin = extractHoldingFromHold202(arguments).get();
 //            System.out.println(String.format("HIN: %s!", hin));
 //        }
     }
@@ -216,6 +216,7 @@ public class BilateralTransferProcessor {
                 .filter(f -> f.getLabel().isPresent() && f.getLabel().get().equalsIgnoreCase("message"))
                 .map(Record.Field::getValue)
                 .map(Hold202::fromValue)
+//                Note: dlvrg or rcvg might be None
                 .map(x -> x.zuDocument.zuSctiesSttlmTxConf.zuSplmtryData.zuEnvlp.zuDocument.hold202SuplDataV01.zuHldgBal.zuDlvrgHldgBal)
                 .map(b -> ((Some<BigDecimal>)b).body)
                 .findFirst();
