@@ -4,13 +4,17 @@
 package com.daml.spider;
 
 import com.daml.ledger.javaapi.data.GetPackageResponse;
+import com.daml.ledger.javaapi.data.Unit;
 import com.daml.ledger.rxjava.DamlLedgerClient;
 import com.daml.ledger.rxjava.LedgerClient;
 import com.daml.ledger.rxjava.PackageClient;
 import com.daml.spider.transfer.BilateralTransferProcessor;
+import com.daml.spider.transfer.MessageBuilder;
 import com.digitalasset.daml_lf.DamlLf;
 import com.digitalasset.daml_lf.DamlLf1;
 import com.google.protobuf.CodedInputStream;
+import da.spider.main.integration.bmw.messages.hold201.generated.receivedelivery1code.ReceiveDelivery1Codez_DELI;
+import da.spider.main.integration.bmw.messages.hold201.generated.receivedelivery1code.ReceiveDelivery1Codez_RECE;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.reactivex.Flowable;
@@ -21,19 +25,20 @@ import java.util.Optional;
 public class Main {
 
     // application id used for sending commands
-    public static final String APP_ID = "AccountApp";
+    public static final String APP_ID = "App";
 
     // constants for referring to the parties
     public static final String OPERATOR = "00001";
 
     public static void main(String[] args) {
         // Extract host and port from arguments
-        if (args.length < 2) {
-            System.err.println("Usage: HOST PORT");
+        if (args.length < 3) {
+            System.err.println("Usage: HOST PORT [DelivererRequest|ReceiverRequest|QueryHoldings]");
             System.exit(-1);
         }
         String host = args[0];
         int port = Integer.valueOf(args[1]);
+        Demo mode = Demo.valueOf(args[2]);
 
         //         create a client object to access services on the ledger
     //        DamlLedgerClient client = DamlLedgerClient.forHostWithLedgerIdDiscovery(host, port, Optional.empty());
@@ -52,7 +57,19 @@ public class Main {
         // start the processors asynchronously to log transactions
 //        processor.runIndefinitely();
 
-        processor.queryHoldginsFromAcs();
+        switch (mode) {
+            case QueryHoldings:
+                processor.queryHoldginsFromAcs();
+                break;
+            case DelivererRequest:
+                processor.requestTransfer("01442", MessageBuilder.buildMsg("01442", "0010000023", new ReceiveDelivery1Codez_DELI(Unit.getInstance())));
+                break;
+            case ReceiverRequest:
+                processor.requestTransfer("01443", MessageBuilder.buildMsg("01443", "0010000031", new ReceiveDelivery1Codez_RECE(Unit.getInstance())));
+                break;
+            default:
+                break;
+        }
 
         try {
             // wait a couple of seconds for the processing to finish
