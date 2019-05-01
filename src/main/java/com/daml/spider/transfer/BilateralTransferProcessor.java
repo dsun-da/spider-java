@@ -8,6 +8,7 @@ import com.daml.ledger.rxjava.LedgerClient;
 import com.google.protobuf.Empty;
 import da.internal.prelude.optional.Some;
 import da.spider.main.bizprocess.holding.model.Holding;
+import da.spider.main.integration.bmw.egress.comm808out.Comm808Out;
 import da.spider.main.integration.bmw.ingress.BmwIngressMaster;
 import da.spider.main.integration.bmw.messages.hold202.Hold202;
 import io.reactivex.Flowable;
@@ -236,6 +237,26 @@ public class BilateralTransferProcessor {
                 f.getValue() instanceof Record) ?
                 ((Record)f.getValue()).getFields().stream() :
                 Stream.empty();
+    }
+
+    public void queryNacks() {
+        Identifier id = new Identifier(
+                packageId,
+                "DA.ASX.Main.Integration.BMW.Egress.Comm808Out",
+                "Comm808Out");
+        Filter filter = new InclusiveFilter(new HashSet<>(Collections.singletonList(id)));
+
+        Flowable<GetActiveContractsResponse> activeContracts = this.client.getActiveContractSetClient()
+                .getActiveContracts(
+                        new FiltersByParty(Collections.singletonMap(operator, filter)),
+                        true);
+        activeContracts.forEach(x -> {
+            System.out.println("activeContract: " + x);
+            x.getCreatedEvents().forEach(e -> {
+                Comm808Out comm808Out = Comm808Out.fromValue(e.getArguments());
+                System.out.println(String.format("Comm808Out: %s", comm808Out));
+            });
+        });
     }
 
     public void queryHoldginsFromAcs() {

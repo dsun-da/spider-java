@@ -58,6 +58,9 @@ public class Main {
 //        processor.runIndefinitely();
 
         switch (mode) {
+            case QueryNacks:
+                processor.queryNacks();
+                break;
             case QueryHoldings:
                 processor.queryHoldginsFromAcs();
                 break;
@@ -66,6 +69,9 @@ public class Main {
                 break;
             case ReceiverRequest:
                 processor.requestTransfer("01443", MessageBuilder.buildMsg("01443", "0010000031", new ReceiveDelivery1Codez_RECE(Unit.getInstance())));
+                break;
+            case ReceiverRequestNack:
+                processor.requestTransfer("01443", MessageBuilder.buildMsg("01443", "0010000023", new ReceiveDelivery1Codez_RECE(Unit.getInstance())));
                 break;
             default:
                 break;

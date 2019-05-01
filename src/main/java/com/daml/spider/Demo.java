@@ -4,8 +4,11 @@
 package com.daml.spider;
 
 enum Demo {
+    QueryNacks,
     DelivererRequest,
+    DelivererRequestNack,
     ReceiverRequest,
+    ReceiverRequestNack,
     QueryHoldings
 }
 
